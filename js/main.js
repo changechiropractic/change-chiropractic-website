@@ -24,65 +24,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Replace your existing contactForm.addEventListener block with this:
 if (contactForm) {
-    contactForm.addEventListener('submit', function(e) {
-        e.preventDefault(); // Prevents the page from refreshing
+        contactForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevents the page from refreshing
 
-        // Get the form values
-        const name = document.getElementById('name').value;
-        const email = document.getElementById('email').value;
-        const phone = document.getElementById('phone').value;
-        const messageInput = document.getElementById('message').value;
-        const submitBtn = contactForm.querySelector('button[type="submit"]');
-
-        // Indicate sending state
-        const originalBtnText = submitBtn.textContent;
-        submitBtn.textContent = 'Sending...';
-        submitBtn.disabled = true;
-
-        // Send form data to formsubmit.co "behind the scenes"
-        fetch("https://formsubmit.co/ajax/admin@changechiropractic.ie", {
-            method: "POST",
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                name: name,
-                email: email,
-                phone: phone,
-                message: messageInput,
-                _subject: "New Website Contact Form Submission" // Subject line of the email
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Show a success message
-            formMessage.textContent = `Thank you, ${name}! Your message has been sent successfully.`;
-            formMessage.className = 'form-message success';
-            formMessage.style.display = 'block';
-
-            // Clear the form inputs
-            contactForm.reset();
-        })
-        .catch(error => {
-            // Show error message
-            formMessage.textContent = `Oops! There was an error sending your message.`;
-            formMessage.className = 'form-message error';
-            formMessage.style.display = 'block';
-        })
-        .finally(() => {
-            // Reset the button text
-            submitBtn.textContent = originalBtnText;
-            submitBtn.disabled = false;
-
-            // Hide the message after 5 seconds
-            setTimeout(() => {
-                formMessage.style.display = 'none';
-                formMessage.className = 'form-message'; 
-            }, 5000);
+            // Get the name the user typed in
+            const name = document.getElementById('name').value;
+            const formData = new FormData(contactForm);
+            
+            fetch(contactForm.action, {
+                method: contactForm.method,
+                body: formData,
+                headers: {
+                    'Accept': 'application/json'
+                }
+            }).then(response => {
+                if (response.ok) {
+                    // Show a success message
+                    formMessage.textContent = `Thank you, ${name}! Your message has been sent successfully.`;
+                    formMessage.className = 'form-message success';
+                    formMessage.style.display = 'block';
+                    // Clear the form inputs
+                    contactForm.reset();
+                } else {
+                    response.json().then(data => {
+                        if (Object.hasOwn(data, 'errors')) {
+                            formMessage.textContent = data["errors"].map(error => error["message"]).join(", ");
+                        } else {
+                            formMessage.textContent = "Oops! There was a problem submitting your form.";
+                        }
+                        formMessage.className = 'form-message error';
+                        formMessage.style.display = 'block';
+                    });
+                }
+            }).catch(error => {
+                formMessage.textContent = "Oops! There was a problem submitting your form.";
+                formMessage.className = 'form-message error';
+                formMessage.style.display = 'block';
+            }).finally(() => {
+                // Hide the message after 5 seconds
+                setTimeout(() => {
+                    formMessage.style.display = 'none';
+                    formMessage.className = 'form-message'; 
+                }, 5000);
+            });
         });
-    });
-}
+    }
 
     // --- FAQ Logic ---
     const faqItems = document.querySelectorAll('.faq-item');
